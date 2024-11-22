@@ -1,0 +1,6 @@
+# Core Dependencies
+node >= 14.0.0
+npm >= 6.0.0
+
+# Development Dependencies
+jest >= 29.7.0

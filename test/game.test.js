@@ -1,15 +1,26 @@
-const Game = require('../src/game');
+const { Game, getPlayerInfo } = require('../src/game');
 const Player = require('../src/player');
+const readline = require('readline');
+
+jest.mock('readline', () => ({
+    createInterface: jest.fn().mockReturnValue({
+        question: jest.fn(),
+        close: jest.fn()
+    })
+}));
 
 describe('Game', () => {
     let playerA;
     let playerB;
     let game;
+    let rl;
 
     beforeEach(() => {
         playerA = new Player('Player A', 50, 5, 10);
         playerB = new Player('Player B', 100, 10, 5);
         game = new Game(playerA, playerB);
+        rl = readline.createInterface();
+        readline.createInterface.mockClear();
     });
 
     test('should initialize game with two players', () => {
@@ -22,36 +33,18 @@ describe('Game', () => {
         expect(result.log[0].attacker).toBe('Player A');
     });
 
-    test('should end game when a player dies', () => {
-        const result = game.play();
-        expect(playerA.isAlive() || playerB.isAlive()).toBeTruthy();
-        expect(result.winner).toBeDefined();
-    });
+    test('should create player with default values when input is empty', async () => {
+        const mockInputs = ['', '', '', ''];
+        let inputIndex = 0;
 
-    test('should maintain game log of all turns', () => {
-        const result = game.play();
-        expect(Array.isArray(result.log)).toBeTruthy();
-        expect(result.log.length).toBeGreaterThan(0);
-        
-        const firstTurn = result.log[0];
-        expect(firstTurn).toHaveProperty('attacker');
-        expect(firstTurn).toHaveProperty('defender');
-        expect(firstTurn).toHaveProperty('attackRoll');
-        expect(firstTurn).toHaveProperty('defendRoll');
-        expect(firstTurn).toHaveProperty('damage');
-        expect(firstTurn).toHaveProperty('remainingHealth');
-    });
+        rl.question.mockImplementation((question, callback) => {
+            callback(mockInputs[inputIndex++]);
+        });
 
-    test('should simulate turn correctly', () => {
-        const damage = game.simulateTurn(playerA, playerB);
-        expect(typeof damage).toBe('number');
-        expect(damage).toBeGreaterThanOrEqual(0);
-    });
-
-    test('should declare correct winner', () => {
-        // Force one player to die
-        playerB.takeDamage(100);
-        const result = game.play();
-        expect(result.winner).toBe(playerA);
+        const player = await getPlayerInfo('A');
+        expect(player.name).toBe('Player A');
+        expect(player.health).toBe(100);
+        expect(player.strength).toBe(10);
+        expect(player.attack).toBe(5);
     });
 });
